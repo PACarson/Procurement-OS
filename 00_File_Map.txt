@@ -1,0 +1,95 @@
+/**
+ * ============================================================
+ * INVENTORY OS V2 — 00_File_Map.gs
+ * ============================================================
+ * Version      : V2.1
+ * Last Updated : 2026-06-29
+ * ============================================================
+ */
+
+/* ============================================================
+ * 一、文件职责 (FILE RESPONSIBILITIES)
+ * ============================================================
+ *
+ * 21_InventoryEngine.gs
+ *   - 核心 CRUD（inventoryCreate / inventoryUpdate /
+ *     inventoryConsume / inventoryAdjust / inventoryExpire）
+ *   - Event 写入入口
+ *   - Ledger 调用触发
+ *   - Projection（Read Model）更新触发
+ *   - 唯一可直接操作 SpreadsheetApp 的模块
+ *
+ * 22_InventoryLedgerEngine.gs
+ *   - 不可变 Event 记录（recordInventoryEvent）
+ *   - Ledger 一致性校验（validateLedgerConsistency）
+ *   - 从 Event 重建状态（rebuildFromEvents）
+ *   - Batch 层级追踪（INVENTORY_BATCH）
+ *
+ * 23_InventoryForecastEngine.gs
+ *   - 消耗速度计算（calculateConsumptionRate）
+ *   - 耗尽日期预测（predictDepletionDate）
+ *   - 剩余天数估算（estimateRemainingDays）
+ *
+ * 24_InventorySignalEngine.gs
+ *   - 阈值评估（evaluateThresholds）
+ *   - 信号生成（generateSignals）：
+ *     LOW_STOCK_SIGNAL / EXPIRY_WARNING_SIGNAL /
+ *     URGENT_RESTOCK_SIGNAL / NORMAL_SIGNAL
+ *   - 组装 Procurement Request（buildProcurementRequest）
+ *
+ * 25_InventoryInsightEngine.gs
+ *   - 用量报告（generateUsageReport）
+ *   - 异常检测（detectAnomalies）
+ *   - 快速消耗品识别（identifyFastConsumptionItems）
+ *   - 只读，不回写 Ledger / Read Model
+ *
+ * 26_InventoryBridge.gs
+ *   - 唯一对外接口：Procurement OS / Task System /
+ *     Personal AI Core
+ *   - sendProcurementRequest / emitEventToCore /
+ *     sendTaskSignal
+ *   - 不含业务逻辑、不含预测逻辑、不直连 Sheet
+ *
+ * ============================================================
+ * 二、模块关系 (MODULE RELATIONSHIPS)
+ * ============================================================
+ *
+ *   Trigger (manual add / order received / consume log)
+ *            │
+ *            ▼
+ *   21_InventoryEngine (CRUD / Event write)
+ *            │
+ *            ▼
+ *   22_InventoryLedgerEngine (immutable ledger / batch)
+ *            │
+ *            ▼
+ *   23_InventoryForecastEngine (consumption_rate / remaining_days)
+ *            │
+ *            ▼
+ *   24_InventorySignalEngine (risk level / threshold check)
+ *            │
+ *            ├─► SAFE / WATCH ─► (no action, Read Model 更新即可)
+ *            └─► LOW / CRITICAL ─► buildProcurementRequest()
+ *                       │
+ *                       ▼
+ *              26_InventoryBridge
+ *                       │
+ *                       ├─► Procurement OS
+ *                       │     (69_ProcurementBridge → 61_RequestAggregator)
+ *                       └─► Task System（仅当 Bridge 判定需要）
+ *
+ *   25_InventoryInsightEngine ──(只读)── Read Model + Ledger
+ *            └─► 用量报告 / 异常检测（不回写）
+ *
+ *   依赖方向：21 → 22 → 23 → 24 → 25 → 26
+ *   （低编号不依赖高编号；26 是唯一对外窗口）
+ *
+ *   跨 OS 边界：
+ *   Inventory OS (21–26)  ──Bridge──►  Procurement OS (60–69)
+ *   两者通过 Event + Bridge 解耦，互不直接读写对方 Sheet。
+ *
+ *   共享依赖：
+ *   21_InventoryEngine ──► 00_Identity_Registry.gs
+ *   （取得 / 自动建立 identity_id；与 Procurement OS 共用
+ *     同一份 Registry）
+ */
