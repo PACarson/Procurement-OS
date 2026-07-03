@@ -1,0 +1,84 @@
+/**
+ * ============================================================
+ * INVENTORY OS V2 — 00_Project_State.gs
+ * ============================================================
+ * Version      : V2.1
+ * Last Updated : 2026-06-29
+ * Phase        : Pre-Implementation（架构定案，尚未写实现代码）
+ * ============================================================
+ */
+
+/* ============================================================
+ * 一、已完成 (COMPLETED)
+ * ============================================================
+ *
+ * - 定位定案：Inventory OS V2 = Consumption Intelligence +
+ *     Lifecycle Tracking + Procurement Trigger Engine
+ *     （不是库存清单系统）
+ *
+ * - Domain Model 定案：
+ *     INVENTORY_MASTER（Identity-based）/ INVENTORY_BATCH /
+ *     INVENTORY_LEDGER（Event-derived，不可变）/
+ *     INVENTORY_READ_MODEL（Projection）
+ *
+ * - 模块文件结构定案（21–26）：
+ *     21 InventoryEngine        / 22 InventoryLedgerEngine
+ *     23 InventoryForecastEngine / 24 InventorySignalEngine
+ *     25 InventoryInsightEngine  / 26 InventoryBridge
+ *
+ * - Event 类型定案（共 7 种）：
+ *     INVENTORY_CREATED / INVENTORY_ADDED / INVENTORY_CONSUMED /
+ *     INVENTORY_ADJUSTED / INVENTORY_EXPIRED /
+ *     INVENTORY_LOW_STOCK / INVENTORY_RESTOCK_REQUESTED
+ *
+ * - Risk 分级定案：SAFE / WATCH / LOW / CRITICAL（阈值已定，
+ *     见 Constitution A8）
+ *
+ * - Procurement 触发逻辑定案：
+ *     Inventory 只发 ProcurementRequest
+ *     （identity_id / estimated_quantity / urgency /
+ *       reason="Inventory" / required_before），
+ *     不直接建采购项，不直接调用 Procurement OS 内部模块。
+ *
+ * - 治理三件套 V1（本次交付）
+ *
+ * - Identity 阻塞已解除：00_Identity_Registry.gs
+ *     （Lightweight Identity Stub）已实现。Inventory OS 通过
+ *     IdentityRegistry.resolve() 取得 / 自动建立 identity_id，
+ *     详见 Constitution P2 / C5。
+ *
+ * ============================================================
+ * 二、进行中 (IN PROGRESS)
+ * ============================================================
+ *
+ * - 尚未开始任何 .gs 实现代码（本轮只交付治理文件）
+ *
+ * - Policy Engine / Knowledge Engine / Reason Engine（来自
+ *   "PA AI Framework V3" 提案）是否纳入 Inventory OS V2 范畴——
+ *   暂不纳入本版本，待 Framework V3 单独决策。
+ *
+ * ============================================================
+ * 三、已知 Bug (KNOWN BUGS)
+ * ============================================================
+ *
+ * - 无（尚未进入实现阶段，无代码即无 Bug）
+ *
+ * ============================================================
+ * 四、下一步 (NEXT STEPS)
+ * ============================================================
+ *
+ *  1. 实现 21_InventoryEngine.gs：Sheet 初始化 + CRUD + Event 写入
+ *     （建档时调用 IdentityRegistry.resolve() 取得 identity_id）
+ *  2. 实现 22_InventoryLedgerEngine.gs：
+ *     recordInventoryEvent / validateLedgerConsistency /
+ *     rebuildFromEvents
+ *  3. 实现 23_InventoryForecastEngine.gs：
+ *     consumption_rate / remaining_days / depletion 预测
+ *  4. 实现 24_InventorySignalEngine.gs：
+ *     阈值判定 + buildProcurementRequest()
+ *  5. 实现 25_InventoryInsightEngine.gs：
+ *     消耗模式 / 异常检测 / 浪费与超买检测
+ *  6. 实现 26_InventoryBridge.gs：
+ *     对接 ProcurementBridge / Task System / Personal AI Core
+ *  7. 用真实样本测试：猫粮 / 肥皂 / 机油 / 洗衣液
+ */
