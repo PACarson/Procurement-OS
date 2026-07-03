@@ -1,0 +1,116 @@
+/**
+ * ============================================================
+ * INVENTORY OS V2 — 00_Project_Constitution.gs
+ * ============================================================
+ * Module Range : 21–26
+ * Version      : V2.1
+ * Last Updated : 2026-06-29
+ *
+ * 本文件是 Inventory OS V2 的最高治理文件。
+ * 任何架构 / 命名 / 职责变更，必须先更新此文件，再动代码。
+ * ============================================================
+ */
+
+/* ============================================================
+ * 一、核心原则 (CORE PRINCIPLES)
+ * ============================================================
+ *
+ * P1. Inventory OS 不是「库存清单系统」。
+ *     它是：Consumption Intelligence + Lifecycle Tracking +
+ *     Procurement Trigger Engine。
+ *     职责 = 追踪用户拥有什么 + 消耗多快 + 何时会用完 +
+ *            何时该触发 Procurement OS。
+ *
+ * P2. Inventory OS 是 Identity-based 系统。
+ *     所有 inventory item 必须映射到共享模块
+ *     00_Identity_Registry.gs（Lightweight Identity Stub）的
+ *     canonical identity，禁止自行维护物品名称比对逻辑。
+ *
+ * P3. Inventory OS 绝不直接创建 Procurement Item，
+ *     绝不直接发送 Telegram，绝不直接创建 Task，
+ *     绝不依赖 UI 逻辑。一切对外交互通过 Event + Bridge 层。
+ *
+ * P4. Inventory OS 只负责「预测」与「发信号」，
+ *     不负责「决策」与「执行采购」——
+ *     是否买、何时买，由 Procurement OS 的 Decision Engine 决定。
+ *
+ * P5. Read Model（INVENTORY_READ_MODEL）是查询唯一真相来源。
+ *     INVENTORY_LEDGER 不可变，查询时绝不重播 Ledger。
+ */
+
+/* ============================================================
+ * 二、架构规则 (ARCHITECTURE RULES)
+ * ============================================================
+ *
+ * A1. Event Sourcing + CQRS + Domain Blueprint V2
+ *     （与 Personal AI Core / Procurement OS 架构一致）。
+ *
+ * A2. 主流程（生命周期）：
+ *     Request → Intake → Lifecycle → Consumption → Forecast →
+ *     Depletion → Procurement Signal → Projection → Insights
+ *
+ * A3. 分层访问（Layered Access）：
+ *     只有 21_InventoryEngine.gs 可以直接操作 SpreadsheetApp。
+ *     其余模块（Ledger / Forecast / Signal / Insight / Bridge）
+ *     一律通过 Engine 提供的读写接口访问数据，禁止直连 Sheet。
+ *
+ * A4. 依赖方向单一：
+ *     21 → 22 → 23 → 24 → 25 → 26 → Bridge
+ *     低编号模块绝不依赖高编号模块；26 是唯一对外窗口。
+ *
+ * A5. Inventory → Procurement OS：
+ *     只能经由 24_InventorySignalEngine →
+ *     26_InventoryBridge → 69_ProcurementBridge（Procurement OS）。
+ *     禁止跨模块直接调用，禁止 Inventory 直接写入 Procurement 的 Sheet。
+ *
+ * A6. Inventory → Task System：
+ *     只能经由 26_InventoryBridge；
+ *     Inventory 本身从不决定是否建 Task
+ *     （例如：到期预警 / 严重缺货只发信号，建不建 Task 由 Bridge 判断）。
+ *
+ * A7. Ledger 不可变（Event Sourcing 核心约束）：
+ *     INVENTORY_LEDGER 只能新增记录，event_type 限定为
+ *     ADD / CONSUME / ADJUST / EXPIRE / TRANSFER / CORRECT，
+ *     写入后不可修改、不可删除。
+ *
+ * A8. Risk Engine 阈值固定（不可在业务代码中散落硬编码）：
+ *     remaining_days < 3   → CRITICAL
+ *     remaining_days < 7   → LOW
+ *     remaining_days < 14  → WATCH
+ *     else                 → SAFE
+ *
+ * A9. 文件编号占用 21–26，已在 Personal AI Core 全局
+ *     00_File_Map 中登记，与其他业务模块
+ *     （如 Procurement OS 60–69）区间不重叠。
+ */
+
+/* ============================================================
+ * 三、CODING RULES
+ * ============================================================
+ *
+ * C1. 每个 .gs 文件使用 IIFE 模块模式封装，对外只暴露必要函数。
+ *
+ * C2. 完整文件交付制：每次只交付"已修改"或"新建"的完整文件，
+ *     不使用 diff。
+ *
+ * C3. 任何代码变更，必须同步更新三份治理文件：
+ *     00_Project_Constitution.gs / 00_Project_State.gs /
+ *     00_File_Map.gs
+ *
+ * C4. 核心公式统一只在 23_InventoryForecastEngine.gs 实现一次，
+ *     禁止在其他模块重复计算：
+ *     consumption_rate = total_consumed / time_window
+ *     remaining_days   = current_stock / consumption_rate
+ *
+ * C5. 任何 inventory item 必须先有 identity_id 才能建档。
+ *     identity_id 一律通过 IdentityRegistry.resolve()
+ *     （00_Identity_Registry.gs）取得或自动建立 Stub，
+ *     禁止自行生成或硬编码 identity_id。
+ *
+ * C6. Event 类型限定为以下七种，不可随意新增字符串：
+ *     INVENTORY_CREATED / INVENTORY_ADDED / INVENTORY_CONSUMED /
+ *     INVENTORY_ADJUSTED / INVENTORY_EXPIRED /
+ *     INVENTORY_LOW_STOCK / INVENTORY_RESTOCK_REQUESTED
+ *
+ * C7. 批量读取（Batch Read）：禁止逐行 / 逐 cell 读取 Sheet。
+ */
