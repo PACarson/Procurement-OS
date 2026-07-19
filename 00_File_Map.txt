@@ -92,5 +92,4 @@
  *   21_InventoryEngine ──► 00_Identity_Registry.gs
  *   （取得 / 自动建立 identity_id；与 Procurement OS 共用
  *     同一份 Registry）
-
  */
